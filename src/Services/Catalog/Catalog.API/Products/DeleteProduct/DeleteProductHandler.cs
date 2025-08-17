@@ -11,20 +11,16 @@ public class DeleteProductCommandValidator : AbstractValidator<DeleteProductComm
         RuleFor(command => command.Id).NotEmpty().WithMessage("Product Id is required.");
     }
 }
-internal class DeleteProductCommandHandler(IDocumentSession session, ILogger<DeleteProductCommandHandler> logger)
+internal class DeleteProductCommandHandler(IDocumentSession session)
     : ICommandHandler<DeleteProductCommand, DeleteProductResult>
 {
     public async Task<DeleteProductResult> Handle(DeleteProductCommand command, CancellationToken cancellationToken)
     {
-        // Log the command handling
-        logger.LogInformation("DeleteProductHandler.Handle called with {@Command}", command);
-
-        //var origProduct = await session.LoadAsync<Product>(command.Id, cancellationToken)
+         //var origProduct = await session.LoadAsync<Product>(command.Id, cancellationToken)
         var productExists = await session.Query<Product>().AnyAsync(p => p.Id == command.Id, cancellationToken);
 
         if(!productExists)
         {
-            logger.LogInformation("Product with Id {ProductId} not found", command.Id);
             throw new ProductNotFoundException(command.Id);
         }
 
@@ -36,7 +32,6 @@ internal class DeleteProductCommandHandler(IDocumentSession session, ILogger<Del
         productExists = await session.Query<Product>().AnyAsync(p => p.Id == command.Id, cancellationToken);
         if (productExists)
         {
-            logger.LogInformation("Product Id with Id: {#@Id} still exists. Delete Failed.", command.Id);
             // If the product still exists, it means deletion failed
             return new DeleteProductResult(false);
         }
