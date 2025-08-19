@@ -1,17 +1,17 @@
 ﻿
 namespace Catalog.API.Products.GetProducts;
 
-//public record GetProductsQuery
+public record GetProductsRequest(int? PageNumber = 1, int? PageSize = 10);
 public record GetProductResponse(IEnumerable<Product> Products);
 
 public class GetProductsEndpoint : ICarterModule
 {
     public void AddRoutes(IEndpointRouteBuilder app)
     {
-        app.MapGet("/products", async (ISender sender) =>
+        app.MapGet("/products", async ([AsParameters] GetProductsRequest request, ISender sender) =>
         {
             // Create a query to get products
-            var query = new GetProductsQuery();
+            var query = request.Adapt<GetProductsQuery>();
 
             // Send the query to the MediatR pipeline
             var result = await sender.Send(query);
