@@ -4,6 +4,8 @@ using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 var builder = WebApplication.CreateBuilder(args);
 
 //Add services to the container.
+
+//Application Serivces
 var assembly = typeof(Program).Assembly;
 builder.Services.AddCarter();
 builder.Services.AddMediatR(config =>
@@ -13,19 +15,20 @@ builder.Services.AddMediatR(config =>
     config.AddOpenBehavior(typeof(LoggingBehavior<,>));
 });
 
+//Data Serivces
 builder.Services.AddMarten(opts =>
 {
     opts.Connection(builder.Configuration.GetConnectionString("Database")!);
     opts.Schema.For<ShoppingCart>().Identity(x => x.UserName); // Set UserName as the PK
 }).UseLightweightSessions();
 
+builder.Services.AddScoped<IBasketRepository, BasketRepository>();
+builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
+
 builder.Services.AddStackExchangeRedisCache(options =>
 {
     options.Configuration = builder.Configuration.GetConnectionString("Redis");
 });
-
-builder.Services.AddScoped<IBasketRepository, BasketRepository> ();
-builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
 
 //Add distributed cache, but can't duplicate method on line 19 so we use manual regirstration if you cant use Scrutor
 //builder.Services.AddScoped<IBasketRepository>(provider =>
@@ -34,7 +37,26 @@ builder.Services.Decorate<IBasketRepository, CachedBasketRepository>();
 //    return new CachedBasketRepository(basketRepository, provider.GetRequiredService<IDistributedCache>());
 //});
 
+//Grpc Services
+builder.Services.AddGrpcClient<DiscountProtoService.DiscountProtoServiceClient>(options =>
+{
+    options.Address = new Uri(builder.Configuration["GrpcSettings:DiscountUrl"]!);
+}) .ConfigurePrimaryHttpMessageHandler(() => 
+{
+    //This should be used in a dev environment only
+    //you're telling your code to ignore security settings by not checking server certificats from your grpc server
+    var handler = new HttpClientHandler
+    {
+        ServerCertificateCustomValidationCallback = HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+    };
+
+    return handler;
+});
+
+
+
 builder.Services.AddExceptionHandler<CustomExceptionHandler>();
+
 builder.Services.AddHealthChecks()
     .AddNpgSql(builder.Configuration.GetConnectionString("Database")!)
     .AddRedis(builder.Configuration.GetConnectionString("Redis")!);

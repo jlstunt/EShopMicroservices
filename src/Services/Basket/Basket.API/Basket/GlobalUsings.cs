@@ -10,4 +10,6 @@ global using Basket.API.Data;
 global using BuildingBlocks.Exceptions;
 global using Basket.API.Exceptions;
 global using BuildingBlocks.Exceptions.Handler;
+global using Discount.Grpc;
+global using static Discount.Grpc.DiscountProtoService;
 
