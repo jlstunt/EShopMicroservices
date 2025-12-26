@@ -1,5 +1,6 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Ordering.Infrastructure.Data;
 
 namespace Ordering.Infrastructure
 {
@@ -9,9 +10,13 @@ namespace Ordering.Infrastructure
                 (this IServiceCollection services, IConfiguration configuration)
             {
                 var connectionString = configuration.GetConnectionString("Database");
-                
-                //Add services to container
-                return services;
+
+            //Add services to the container
+            services.AddDbContext<ApplicationDBContext>(options =>
+                options.UseSqlServer(connectionString));
+
+            //Add services to container
+            return services;
         }
     }
 }
